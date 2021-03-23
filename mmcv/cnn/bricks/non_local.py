@@ -38,6 +38,8 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
                  conv_cfg=None,
                  norm_cfg=None,
                  mode='embedded_gaussian',
+                 kernel_size=1,
+                 padding=0,
                  **kwargs):
         super(_NonLocalNd, self).__init__()
         self.in_channels = in_channels
@@ -53,18 +55,38 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
                              f"'embedded_gaussian' or 'dot_product', but got "
                              f'{mode} instead.')
 
+        if isinstance(kernel_size, int):
+            kernel_size = {
+                'g': kernel_size,
+                'conv_out': kernel_size,
+                'phi': kernel_size,
+                'theta': kernel_size,
+                'concat_project': kernel_size,
+            }
+
+        if isinstance(padding, int):
+            padding = {
+                'g': padding,
+                'conv_out': padding,
+                'phi': padding,
+                'theta': padding,
+                'concat_project': padding,
+            }
+
         # g, theta, phi are defaulted as `nn.ConvNd`.
         # Here we use ConvModule for potential usage.
         self.g = ConvModule(
             self.in_channels,
             self.inter_channels,
-            kernel_size=1,
+            kernel_size=kernel_size['g'],
+            padding=padding['g'],
             conv_cfg=conv_cfg,
             act_cfg=None)
         self.conv_out = ConvModule(
             self.inter_channels,
             self.in_channels,
-            kernel_size=1,
+            kernel_size=kernel_size['conv_out'],
+            padding=padding['conv_out'],
             conv_cfg=conv_cfg,
             norm_cfg=norm_cfg,
             act_cfg=None)
@@ -73,13 +95,15 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
             self.theta = ConvModule(
                 self.in_channels,
                 self.inter_channels,
-                kernel_size=1,
+                kernel_size=kernel_size['theta'],
+                padding=padding['theta'],
                 conv_cfg=conv_cfg,
                 act_cfg=None)
             self.phi = ConvModule(
                 self.in_channels,
                 self.inter_channels,
-                kernel_size=1,
+                kernel_size=kernel_size['phi'],
+                padding=padding['phi'],
                 conv_cfg=conv_cfg,
                 act_cfg=None)
 
@@ -87,9 +111,9 @@ class _NonLocalNd(nn.Module, metaclass=ABCMeta):
             self.concat_project = ConvModule(
                 self.inter_channels * 2,
                 1,
-                kernel_size=1,
+                kernel_size=kernel_size['concat_project'],
+                padding=padding['concat_project'],
                 stride=1,
-                padding=0,
                 bias=False,
                 act_cfg=dict(type='ReLU'))
 
